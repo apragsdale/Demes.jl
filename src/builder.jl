@@ -1,10 +1,4 @@
 # Functions to iteratively build a graph
-
-using Combinatorics
-
-include("demes_structs.jl")
-include("utils.jl")
-
 function buildGraph(data::Dict)
     # The input data is a dictionary, such as parsed from a YAML
     graph = Graph()

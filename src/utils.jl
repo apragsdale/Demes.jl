@@ -1,7 +1,4 @@
 # Utility functions for working with demes data
-
-include("demes_structs.jl")
-
 function getDemeIntervals(data::Graph)
     # Get the start and end times for each deme, returned as a dictionary
     deme_intervals = Dict{String, Array}()

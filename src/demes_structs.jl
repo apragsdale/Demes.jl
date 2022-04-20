@@ -1,7 +1,3 @@
-# A demes model (a Graph) is defined as a struct, containing
-# top-level information (description, doi, time units, generation times, and defaults)
-# demes, migrations, and pulses.
-
 import Base.@kwdef
 
 @kwdef mutable struct Migration
