@@ -42,37 +42,76 @@ function buildGraph(data::Dict)
     return graph
 end
 
+function addEpoch!(deme::Deme, epoch_data::Dict)
+    epoch = Epoch()
+    # start time
+    if "start_time" ∈ keys(epoch_data)
+        if (length(deme.epochs) >= 1 &&
+            epoch_data["start_time"] != deme.epochs[end].end_time)
+            error("Epoch start time must match last epoch's end time")
+        end
+        epoch.start_time = epoch_data["start_time"]
+    elseif length(deme.epochs) >= 1
+        epoch.start_time = deme.epochs[end].end_time
+    else
+        epoch.start_time = deme.start_time
+    end
+    # end time
+    if "end_time" ∈ keys(epoch_data)
+        epoch.end_time = epoch_data["end_time"]
+    else
+        epoch.end_time = 0
+    end
+    # start size
+    if "start_size" ∈ keys(epoch_data)
+        epoch.start_size = epoch_data["start_size"]
+    elseif length(deme.epochs) >= 1
+        epoch.start_size = deme.epochs[end].end_size
+    else
+        error("Start size must be given for first epoch ∈ a deme")
+    end
+    # end size
+    if "end_size" ∈ keys(epoch_data)
+        epoch.end_size = epoch_data["end_size"]
+    else
+        epoch.end_size = epoch.start_size
+    end
+    # size function
+    if "size_function" ∈ keys(epoch_data)
+        epoch.size_function = epoch_data["size_function"]
+    elseif epoch.start_size == epoch.end_size
+        epoch.size_function = "constant"
+    else
+        epoch.size_function = "exponential"
+    end
+    # cloning rate
+    if "cloning_rate" ∈ keys(epoch_data)
+        epoch.cloning_rate = epoch_data["cloning_rate"]
+    else
+        epoch.cloning_rate = 0
+    end
+    # selfing rate
+    if "selfing_rate" ∈ keys(epoch_data)
+        epoch.selfing_rate = epoch_data["selfing_rate"]
+    else
+        epoch.selfing_rate = 0
+    end
+    push!(deme.epochs, epoch)
+end
+
 function addDeme!(graph::Graph, deme_data::Dict)
     # adds the deme to the graph and validates
     # the input deme against the existing model
     # TODO: work with defaults
     deme_intervals = getDemeIntervals(graph)
-    if "name" ∉ keys(deme_data)
-        error("Deme name must be provided")
-    end
-    if deme_data["name"] ∈ keys(deme_intervals)
-        error("Deme name must be unique")
-    end
+    validateDemeNameDescription(deme_data, deme_intervals)
     deme = Deme(name=deme_data["name"])
     if "description" ∈ keys(deme_data)
         deme.description = deme_data["description"]
     end
     # add start time
     if "start_time" ∈ keys(deme_data)
-        # check for valid start time
-        if deme_data["start_time"] <= 0
-            error("Deme start time must be positive")
-        end
-        # check start time is valid with respect to ancestors
-        if "ancestors" ∈ keys(deme_data)
-            for ancestor ∈ deme_data["ancestors"]
-                if deme_data["start_time"] < deme_intervals[ancestor][2]
-                    error("Deme start time must coincide with ancestors' existence times")
-                elseif deme_data["start_time"] >= deme_intervals[ancestor][1]
-                    error("Deme start time must coincide with ancestors' existence times")
-                end
-            end
-        end
+        validateDemeStartTime(deme_data, deme_intervals)
         deme.start_time = deme_data["start_time"]
     else
         # check start time is given for multiple ancestors
@@ -90,16 +129,7 @@ function addDeme!(graph::Graph, deme_data::Dict)
     end
     # add ancestors and proportions
     if "ancestors" ∈ keys(deme_data)
-        if length(deme_data["ancestors"]) > 1 && "proportions" ∉ keys(deme_data)
-            error("Proportions must be given for more than one ancestor")
-        end
-        if "proportions" ∈ keys(deme_data)
-            if length(deme_data["ancestors"]) != length(deme_data["proportions"])
-                error("Ancestors and proportions must be of same length")
-            elseif sum(deme_data["proportions"]) != 1
-                error("Proportions must sum to 1")
-            end
-        end
+        validateDemeAncestorsProportions(deme_data)
         if length(deme_data["ancestors"]) == 1
             deme.ancestors = deme_data["ancestors"]
             deme.proportions = [1]
@@ -113,60 +143,7 @@ function addDeme!(graph::Graph, deme_data::Dict)
         error("At least one epoch must be provided")
     end
     for epoch_data ∈ deme_data["epochs"]
-        epoch = Epoch()
-        # start time
-        if "start_time" ∈ keys(epoch_data)
-            if (length(deme.epochs) >= 1 &&
-                epoch_data["start_time"] != deme.epochs[end].end_time)
-                error("Epoch start time must match last epoch's end time")
-            end
-            epoch.start_time = epoch_data["start_time"]
-        elseif length(deme.epochs) >= 1
-            epoch.start_time = deme.epochs[end].end_time
-        else
-            epoch.start_time = deme.start_time
-        end
-        # end time
-        if "end_time" ∈ keys(epoch_data)
-            epoch.end_time = epoch_data["end_time"]
-        else
-            epoch.end_time = 0
-        end
-        # start size
-        if "start_size" ∈ keys(epoch_data)
-            epoch.start_size = epoch_data["start_size"]
-        elseif length(deme.epochs) >= 1
-            epoch.start_size = deme.epochs[end].end_size
-        else
-            error("Start size must be given for first epoch ∈ a deme")
-        end
-        # end size
-        if "end_size" ∈ keys(epoch_data)
-            epoch.end_size = epoch_data["end_size"]
-        else
-            epoch.end_size = epoch.start_size
-        end
-        # size function
-        if "size_function" ∈ keys(epoch_data)
-            epoch.size_function = epoch_data["size_function"]
-        elseif epoch.start_size == epoch.end_size
-            epoch.size_function = "constant"
-        else
-            epoch.size_function = "exponential"
-        end
-        # cloning rate
-        if "cloning_rate" ∈ keys(epoch_data)
-            epoch.cloning_rate = epoch_data["cloning_rate"]
-        else
-            epoch.cloning_rate = 0
-        end
-        # selfing rate
-        if "selfing_rate" ∈ keys(epoch_data)
-            epoch.selfing_rate = epoch_data["selfing_rate"]
-        else
-            epoch.selfing_rate = 0
-        end
-        push!(deme.epochs, epoch)
+        addEpoch!(deme, epoch_data)
     end
     if deme.start_time != deme.epochs[1].start_time
         error("Start time mismatch")
@@ -175,27 +152,10 @@ function addDeme!(graph::Graph, deme_data::Dict)
     return graph
 end
 
-function getAsymmetricMigration(migration_data, source, dest, deme_intervals)
-    if "start_time" ∈ keys(migration_data)
-        start_time = migration_data["start_time"]
-        if start_time > deme_intervals[source][1]
-            error("Migration start time greater than source start time")
-        elseif start_time > deme_intervals[dest][1]
-            error("Migration start time greater than dest start time")
-        end
-    else
-        start_time = min(deme_intervals[source][1], deme_intervals[dest][1])
-    end
-    if "end_time" ∈ keys(migration_data)
-        end_time = migration_data["end_time"]
-        if end_time < deme_intervals[source][1]
-            error("Migration end time less than source start time")
-        elseif end_time < deme_intervals[dest][1]
-            error("Migration end time greater than dest start time")
-        end
-    else
-        end_time = max(deme_intervals[source][2], deme_intervals[dest][2])
-    end
+function getAsymmetricMigration(
+        migration_data::Dict, source::String, dest::String, deme_intervals::Dict)
+    start_time = validateMigrationStartTime(migration_data, source, dest, deme_intervals)
+    end_time = validateMigrationEndTime(migration_data, source, dest, deme_intervals)
     if start_time <= end_time
         error("Migration start time must be larger than migration end time")
     end
@@ -239,54 +199,10 @@ end
 
 function addPulse!(graph::Graph, pulse_data::Dict)
     deme_intervals = getDemeIntervals(graph)
-    # check all fields are provided
-    if "time" ∉ keys(pulse_data)
-        error("Pulse must have time")
-    end
-    if "dest" ∉ keys(pulse_data)
-        error("Pulse must have dest")
-    end
-    if "sources" ∉ keys(pulse_data)
-        error("Pulse must have sources")
-    elseif isa(pulse_data["sources"], AbstractArray) == false
-        error("Pulse sources must be an array")
-    end
-    if "proportions" ∉ keys(pulse_data)
-        error("Pulse must have proportions")
-    elseif isa(pulse_data["proportions"], AbstractArray) == false
-        error("Pulse proportions must be an array")
-    elseif length(pulse_data["proportions"]) != length(pulse_data["sources"])
-        error("Pulse proportions and sources must have matching lengths")
-    end
-    # check valid sources and dests
-    if pulse_data["dest"] ∈ pulse_data["sources"]
-        error("Pulses cannot have same dest and source")
-    end
-    if length(pulse_data["sources"]) != length(Set(pulse_data["sources"]))
-        error("Pulse has repeated sources")
-    end
-    # check timing of pulse
-    if pulse_data["time"] >= deme_intervals[pulse_data["dest"]][1]
-        error("Pulse time greater than destination existence interval")
-    elseif pulse_data["time"] < deme_intervals[pulse_data["dest"]][2]
-        error("Pulse time less than destination existence interval")
-    end
-    for source ∈ pulse_data["sources"]
-        if pulse_data["time"] >= deme_intervals[source][1]
-            error("Pulse time greater than source existence interval")
-        elseif pulse_data["time"] < deme_intervals[source][2]
-            error("Pulse time less than source existence interval")
-        end
-    end
-    # check proportions are <= 1
-    for prop ∈ pulse_data["proportions"]
-        if prop < 0 || prop > 1
-            error("Pulse proportions must be between 0 and 1")
-        end
-    end
-    if sum(pulse_data["proportions"]) > 1
-        error("Pulse proportions must sum to 1 or less")
-    end
+    validatePulseFields(pulse_data)
+    validatePulseDemes(pulse_data)
+    validatePulseTiming(pulse_data)
+    validatePulseProportions(pulse_data)
     pulse = Pulse(
                   sources=pulse_data["sources"],
                   dest=pulse_data["dest"],
