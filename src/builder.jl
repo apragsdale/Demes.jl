@@ -11,10 +11,15 @@ function buildGraph(data::Dict)
             push!(graph.doi, doi)
         end
     end
-    if "time_units" ∈ keys(data)
+    if "time_units" ∉ keys(data)
+        error("Input graph must provide time units")
+    else
         graph.time_units = data["time_units"]
     end
     if "generation_time" ∈ keys(data)
+        if data["time_units"] == "generations" && data["generation_time"] != 1
+            error("Generation time must be 1 when time units are generations")
+        end
         graph.generation_time = data["generation_time"]
     end
     if "defaults" ∈ keys(data)
