@@ -71,7 +71,7 @@ function asDict(graph::Graph)
     return data
 end
 
-function mergeSymmetricMigrations(asymmetric_migrations::Dict)
+function mergeSymmetricMigrations(asymmetric_migrations::Array{Dict})
     # for migration pairs that have the same start/end time, rate, and source/dest
     # compress into a single migration with start/end time, rate, and demes
     migrations = Dict{Any, Any}[]
@@ -84,7 +84,8 @@ function mergeSymmetricMigrations(asymmetric_migrations::Dict)
             reverse_mig["end_time"] = mig["end_time"]
         end
         if reverse_mig ∈ asymmetric_migrations
-            sym_mig = Dict("rate" => mig["rate"], "demes" => [mig["source"], mig["dest"]])
+            sym_mig = Dict("rate" => mig["rate"],
+                           "demes" => sort([mig["source"], mig["dest"]]))
             if "start_time" ∈ keys(mig)
                 sym_mig["start_time"] = mig["start_time"]
             end
@@ -165,7 +166,7 @@ function asDictSimplified(graph::Graph)
     # simplify migrations
     if length(graph.migrations) > 0
         # we first get all asymmetric migrations ∈ dict form
-        asymmetric_migrations = Dict()
+        asymmetric_migrations = Dict[]
         for migration ∈ graph.migrations
             mig_dict = Dict{Any, Any}(
                                       "rate" => migration.rate,
