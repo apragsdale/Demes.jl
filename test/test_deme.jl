@@ -45,16 +45,40 @@
     )
     @test_throws MethodError Demes.Deme().start_time = "1"
     @test_throws MethodError Demes.Deme().start_time = [1]
-    # test bad ancestor proportions
-    @test_throws Demes.DemeError Demes.validateDemeAncestorsProportions(["A", "B"], [], "X")
-    @test_throws Demes.DemeError Demes.validateDemeAncestorsProportions(
-        ["A", "B"],
-        [1],
-        "X",
+    # test bad ancestors
+    @test_throws Demes.DemeError Demes.validateDemeAncestors(
+        Dict("ancestors" => Set(), "proportions" => [], "name" => "X"),
+        Dict(),
     )
-    @test_throws Demes.DemeError Demes.validateDemeAncestorsProportions(
-        ["A", "B"],
-        [0.2, 0.4],
-        "X",
+    @test_throws Demes.DemeError Demes.validateDemeAncestors(
+        Dict("ancestors" => Set(["A", "B"]), "proportions" => [0.5, 0.5], "name" => "X"),
+        Dict("A" => [Inf, 0], "B" => [Inf, 0]),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeAncestors(
+        Dict("ancestors" => "A", "proportions" => [1], "name" => "X"),
+        Dict("A" => [Inf, 0], "B" => [Inf, 0]),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeAncestors(
+        Dict("ancestors" => ["A"], "proportions" => [1], "name" => "X"),
+        Dict("B" => [Inf, 0]),
+    )
+    # test bad proportions
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A", "B"], "proportions" => [], "name" => "X"),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A", "B"], "proportions" => [1], "name" => "X"),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A", "B"], "proportions" => [0.2, 0.4], "name" => "X"),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A"], "proportions" => 1, "name" => "X"),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A"], "proportions" => [-1], "name" => "X"),
+    )
+    @test_throws Demes.DemeError Demes.validateDemeProportions(
+        Dict("ancestors" => ["A", "B"], "proportions" => [2, -1], "name" => "X"),
     )
 end

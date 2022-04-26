@@ -8,6 +8,7 @@ function validateDemeNameDescription(deme_data::Dict, deme_intervals::Dict)
 end
 
 function validateDemeStartTime(deme_data::Dict, deme_intervals::Dict)
+    # convert string Infinity to Inf
     start_time = deme_data["start_time"]
     if start_time == "Infinity"
         start_time = Inf
@@ -15,6 +16,16 @@ function validateDemeStartTime(deme_data::Dict, deme_intervals::Dict)
     # check for valid start time
     if start_time <= 0
         throw(DemeError(deme_data["name"], "start time must be positive"))
+    end
+    if start_time < Inf
+        if "ancestors" ∉ keys(deme_data) || length(deme_data["ancestors"]) == 0
+            throw(
+                DemeError(
+                    deme_data["name"],
+                    "ancestors required for deme with finite start time",
+                ),
+            )
+        end
     end
     # check start time is valid with respect to ancestors
     if "ancestors" ∈ keys(deme_data)
@@ -33,15 +44,58 @@ function validateDemeStartTime(deme_data::Dict, deme_intervals::Dict)
     return start_time
 end
 
-function validateDemeAncestorsProportions(
-    ancestors::Vector,
-    proportions::Vector,
-    name::String,
-)
-    if length(ancestors) != length(proportions)
-        throw(DemeError(name, "ancestors and proportions must have equal length"))
-    elseif length(ancestors) > 0 && sum(proportions) != 1
-        throw(DemeError(name, "ancestor proportions must sum to 1"))
+function validateDemeAncestors(deme_data::Dict, deme_intervals::Dict)
+    if (typeof(deme_data["ancestors"]) <: Vector) == false
+        throw(DemeError(deme_data["name"], "deme ancestors must be an array"))
+    end
+    if length(deme_data["ancestors"]) > 0 &&
+       typeof(deme_data["ancestors"]) != Vector{String}
+        throw(
+            DemeError(
+                deme_data["name"],
+                "deme ancestors must be an array of deme name strings",
+            ),
+        )
+    end
+    if length(Set(deme_data["ancestors"])) != length(deme_data["ancestors"])
+        throw(DemeError(deme_data["name"], "cannot repeat deme ancestors"))
+    end
+    if deme_data["name"] ∈ deme_data["ancestors"]
+        throw(DemeError(deme_data["name"], "ancestors cannot contain deme name"))
+    end
+    for anc ∈ deme_data["ancestors"]
+        if anc ∉ keys(deme_intervals)
+            throw(
+                DemeError(
+                    deme_data["name"],
+                    "all ancestors must already exist in the graph",
+                ),
+            )
+        end
+    end
+end
+
+function validateDemeProportions(deme_data::Dict)
+    if (typeof(deme_data["proportions"]) <: Vector) == false
+        throw(DemeError(deme_data["name"], "deme proportions must be an array"))
+    end
+    if length(deme_data["proportions"]) > 0 &&
+       all(isa.(deme_data["proportions"], Number)) == false
+        throw(DemeError(deme_data["name"], "deme proportions must be an array of numbers"))
+    end
+    if length(deme_data["ancestors"]) != length(deme_data["proportions"])
+        throw(
+            DemeError(
+                deme_data["name"],
+                "ancestors and proportions must have equal length",
+            ),
+        )
+    elseif length(deme_data["ancestors"]) > 0
+        if sum(deme_data["proportions"]) != 1
+            throw(DemeError(deme_data["name"], "ancestor proportions must sum to 1"))
+        elseif any(<(0), deme_data["proportions"])
+            throw(DemeError(deme_data["name"], "ancestor proportions cannot be negative"))
+        end
     end
 end
 

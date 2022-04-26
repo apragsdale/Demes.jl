@@ -63,25 +63,26 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
     end
     # add ancestors
     if "ancestors" ∈ keys(deme_data)
-        ancestors = deme_data["ancestors"]
+        # no changes needed
     elseif "deme" ∈ keys(default_data) && "ancestors" ∈ keys(default_data["deme"])
-        ancestors = default_data["deme"]["ancestors"]
+        deme_data["ancestors"] = default_data["deme"]["ancestors"]
     else
-        ancestors = String[]
+        deme_data["ancestors"] = String[]
     end
-    deme.ancestors = ancestors
+    validateDemeAncestors(deme_data, deme_intervals)
+    deme.ancestors = deme_data["ancestors"]
     # add proportions
     if "proportions" ∈ keys(deme_data)
-        proportions = deme_data["proportions"]
+        # no changes needed
     elseif "deme" ∈ keys(default_data) && "proportions" ∈ keys(default_data["deme"])
-        proportions = default_data["deme"]["proportions"]
-    elseif length(ancestors) == 1
-        proportions = [1]
+        deme_data["proportions"] = default_data["deme"]["proportions"]
+    elseif length(deme_data["ancestors"]) == 1
+        deme_data["proportions"] = [1]
     else
-        proportions = Number[]
+        deme_data["proportions"] = Number[]
     end
-    validateDemeAncestorsProportions(ancestors, proportions, deme_data["name"])
-    deme.proportions = proportions
+    validateDemeProportions(deme_data)
+    deme.proportions = deme_data["proportions"]
     # add start time
     if "start_time" ∈ keys(deme_data)
         start_time = validateDemeStartTime(deme_data, deme_intervals)
@@ -91,9 +92,9 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
         start_time = validateDemeStartTime(deme_data, deme_intervals)
         deme.start_time = start_time
     else
-        if length(ancestors) > 1
+        if length(deme_data["ancestors"]) > 1
             DemeError("Start time required with multiple ancestors")
-        elseif length(ancestors) == 1
+        elseif length(deme_data["ancestors"]) == 1
             deme.start_time = deme_intervals[deme_data["ancestors"][1]][2]
         else
             deme.start_time = Inf

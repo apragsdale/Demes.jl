@@ -8,9 +8,6 @@
     @test_throws Demes.GraphError Demes.buildGraph(Dict("time_units" => "generations"))
     # demes with multiple ancestors have start time
     @test_throws Demes.GraphError Demes.buildGraph(
-        Dict(
-            "time_units" => "generations",
-            "demes" => [],
-        ),
+        Dict("time_units" => "generations", "demes" => []),
     )
 end
