@@ -5,7 +5,7 @@ function writesGraph(graph::Graph)
     return str
 end
 
-function writeGraph(graph::Graph, filename::String, overwrite::Bool=true)
+function writeGraph(graph::Graph, filename::String, overwrite::Bool = true)
     if isfile(filename) && overwrite == false
         error("filename ", filename, " exists, but overwrite is set to false")
     end

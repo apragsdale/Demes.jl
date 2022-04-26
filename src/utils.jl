@@ -1,7 +1,7 @@
 # Utility functions for working with demes data
 function getDemeIntervals(data::Graph)
     # Get the start and end times for each deme, returned as a dictionary
-    deme_intervals = Dict{String, Array}()
+    deme_intervals = Dict{String,Array}()
     for deme in data.demes
         deme_intervals[deme.name] = [deme.start_time, deme.epochs[end].end_time]
     end

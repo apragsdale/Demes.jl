@@ -27,12 +27,12 @@ function asDict(graph::Graph)
         deme_dict["epochs"] = Dict[]
         for epoch ∈ deme.epochs
             epoch_dict = Dict(
-                              "start_time" => epoch.start_time,
-                              "end_time" => epoch.end_time,
-                              "start_size" => epoch.start_size,
-                              "end_size" => epoch.end_size,
-                              "size_function" => epoch.size_function
-                             )
+                "start_time" => epoch.start_time,
+                "end_time" => epoch.end_time,
+                "start_size" => epoch.start_size,
+                "end_size" => epoch.end_size,
+                "size_function" => epoch.size_function,
+            )
             if epoch.cloning_rate != 0
                 epoch_dict["cloning_rate"] = epoch.cloning_rate
             end
@@ -47,12 +47,12 @@ function asDict(graph::Graph)
         data["migrations"] = Dict[]
         for migration ∈ graph.migrations
             mig_dict = Dict(
-                            "start_time" => migration.start_time,
-                            "end_time" => migration.end_time,
-                            "source" => migration.source,
-                            "dest" => migration.dest,
-                            "rate" => migration.rate
-                           )
+                "start_time" => migration.start_time,
+                "end_time" => migration.end_time,
+                "source" => migration.source,
+                "dest" => migration.dest,
+                "rate" => migration.rate,
+            )
             push!(data["migrations"], mig_dict)
         end
     end
@@ -60,11 +60,11 @@ function asDict(graph::Graph)
         data["pulses"] = Dict[]
         for pulse ∈ graph.pulses
             pulse_dict = Dict(
-                              "time" => pulse.time,
-                              "sources" => pulse.sources,
-                              "dest" => pulse.dest,
-                              "proportions" => pulse.proportions
-                             )
+                "time" => pulse.time,
+                "sources" => pulse.sources,
+                "dest" => pulse.dest,
+                "proportions" => pulse.proportions,
+            )
             push!(data["pulses"], pulse_dict)
         end
     end
@@ -74,9 +74,10 @@ end
 function mergeSymmetricMigrations(asymmetric_migrations::Array{Dict})
     # for migration pairs that have the same start/end time, rate, and source/dest
     # compress into a single migration with start/end time, rate, and demes
-    migrations = Dict{Any, Any}[]
+    migrations = Dict{Any,Any}[]
     for mig ∈ asymmetric_migrations
-        reverse_mig = Dict("rate" => mig["rate"], "source" => mig["dest"], "dest" => mig["source"])
+        reverse_mig =
+            Dict("rate" => mig["rate"], "source" => mig["dest"], "dest" => mig["source"])
         if "start_time" ∈ keys(mig)
             reverse_mig["start_time"] = mig["start_time"]
         end
@@ -84,8 +85,8 @@ function mergeSymmetricMigrations(asymmetric_migrations::Array{Dict})
             reverse_mig["end_time"] = mig["end_time"]
         end
         if reverse_mig ∈ asymmetric_migrations
-            sym_mig = Dict("rate" => mig["rate"],
-                           "demes" => sort([mig["source"], mig["dest"]]))
+            sym_mig =
+                Dict("rate" => mig["rate"], "demes" => sort([mig["source"], mig["dest"]]))
             if "start_time" ∈ keys(mig)
                 sym_mig["start_time"] = mig["start_time"]
             end
@@ -104,7 +105,7 @@ end
 
 function asDictSimplified(graph::Graph)
     deme_intervals = getDemeIntervals(graph)
-    simplified = Dict{Any, Any}()
+    simplified = Dict{Any,Any}()
     simplified = Dict()
     # simplify description
     if length(graph.description) > 0
@@ -122,7 +123,7 @@ function asDictSimplified(graph::Graph)
     # simplfy demes
     simplified["demes"] = Dict[]
     for deme ∈ graph.demes
-        deme_dict = Dict{Any, Any}("name" => deme.name)
+        deme_dict = Dict{Any,Any}("name" => deme.name)
         if length(deme.description) > 0
             deme_dict["description"] = deme.description
         end
@@ -143,10 +144,10 @@ function asDictSimplified(graph::Graph)
         end
         deme_dict["epochs"] = Dict[]
         for epoch ∈ deme.epochs
-            epoch_dict = Dict{Any, Any}(
-                              "end_time" => epoch.end_time,
-                              "start_size" => epoch.start_size,
-                             )
+            epoch_dict = Dict{Any,Any}(
+                "end_time" => epoch.end_time,
+                "start_size" => epoch.start_size,
+            )
             if epoch.end_size != epoch.start_size
                 epoch_dict["end_size"] = epoch.end_size
                 if epoch.size_function != "exponential"
@@ -168,18 +169,18 @@ function asDictSimplified(graph::Graph)
         # we first get all asymmetric migrations ∈ dict form
         asymmetric_migrations = Dict[]
         for migration ∈ graph.migrations
-            mig_dict = Dict{Any, Any}(
-                                      "rate" => migration.rate,
-                                      "source" => migration.source,
-                                      "dest" => migration.dest
-                                     )
+            mig_dict = Dict{Any,Any}(
+                "rate" => migration.rate,
+                "source" => migration.source,
+                "dest" => migration.dest,
+            )
             start_time = migration.start_time
-            if migration.start_time != min(deme_intervals[migration.source][1],
-                                           deme_intervals[migration.dest][1])
+            if migration.start_time !=
+               min(deme_intervals[migration.source][1], deme_intervals[migration.dest][1])
                 mig_dict["start_time"] = migration.start_time
             end
-            if migration.end_time != max(deme_intervals[migration.source][2],
-                                         deme_intervals[migration.dest][2])
+            if migration.end_time !=
+               max(deme_intervals[migration.source][2], deme_intervals[migration.dest][2])
                 mig_dict["end_time"] = migration.end_time
             end
             push!(asymmetric_migrations, mig_dict)
@@ -194,11 +195,11 @@ function asDictSimplified(graph::Graph)
         simplified["pulses"] = Dict[]
         for pulse in graph.pulses
             pulse_dict = Dict(
-                              "time" => pulse.time,
-                              "sources" => pulse.sources,
-                              "dest" => pulse.dest,
-                              "proportions" => pulse.proportions
-                             )
+                "time" => pulse.time,
+                "sources" => pulse.sources,
+                "dest" => pulse.dest,
+                "proportions" => pulse.proportions,
+            )
             push!(simplified["pulses"], pulse_dict)
         end
     end

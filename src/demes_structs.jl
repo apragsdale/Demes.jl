@@ -42,5 +42,5 @@ end
     demes::Array{Deme} = []
     migrations::Array{Migration} = []
     pulses::Array{Pulse} = []
-    defaults::Dict{Any, Any} = Dict()
+    defaults::Dict{Any,Any} = Dict()
 end

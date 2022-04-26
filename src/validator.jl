@@ -8,42 +8,49 @@ function validateDemeNameDescription(deme_data::Dict, deme_intervals::Dict)
 end
 
 function validateDemeStartTime(deme_data::Dict, deme_intervals::Dict)
+    start_time = deme_data["start_time"]
+    if start_time == "Infinity"
+        start_time = Inf
+    end
     # check for valid start time
-    if deme_data["start_time"] <= 0
+    if start_time <= 0
         error("Deme start time must be positive")
     end
     # check start time is valid with respect to ancestors
     if "ancestors" ∈ keys(deme_data)
         for ancestor ∈ deme_data["ancestors"]
-            if deme_data["start_time"] < deme_intervals[ancestor][2]
+            if start_time < deme_intervals[ancestor][2]
                 error("Deme start time must coincide with ancestors' existence times")
-            elseif deme_data["start_time"] >= deme_intervals[ancestor][1]
+            elseif start_time >= deme_intervals[ancestor][1]
                 error("Deme start time must coincide with ancestors' existence times")
             end
         end
     end
+    return start_time
 end
 
-function validateDemeAncestorsProportions(deme_data::Dict)
-    if length(deme_data["ancestors"]) > 1 && "proportions" ∉ keys(deme_data)
-        error("Proportions must be given for more than one ancestor")
-    end
-    if "proportions" ∈ keys(deme_data)
-        if length(deme_data["ancestors"]) != length(deme_data["proportions"])
-            error("Ancestors and proportions must be of same length")
-        elseif sum(deme_data["proportions"]) != 1
-            error("Proportions must sum to 1")
-        end
+function validateDemeAncestorsProportions(ancestors::Vector, proportions::Vector)
+    if length(ancestors) != length(proportions)
+        error("Ancestors and proportions must be of same length")
+    elseif length(ancestors) > 0 && sum(proportions) != 1
+        error("Proportions must sum to 1")
     end
 end
 
 function validateMigrationStartTime(
-        migration_data::Dict, source::String, dest::String, deme_intervals::Dict)
+    migration_data::Dict,
+    source::String,
+    dest::String,
+    deme_intervals::Dict,
+)
     if source ∉ keys(deme_intervals) || dest ∉ keys(deme_intervals)
         error("Source and dest must be present in graph")
     end
     if "start_time" ∈ keys(migration_data)
         start_time = migration_data["start_time"]
+        if start_time == "Infinity"
+            start_time = Inf
+        end
         if start_time > deme_intervals[source][1]
             error("Migration start time greater than source start time")
         elseif start_time > deme_intervals[dest][1]
@@ -56,16 +63,20 @@ function validateMigrationStartTime(
 end
 
 function validateMigrationEndTime(
-        migration_data::Dict, source::String, dest::String, deme_intervals::Dict)
+    migration_data::Dict,
+    source::String,
+    dest::String,
+    deme_intervals::Dict,
+)
     if source ∉ keys(deme_intervals) || dest ∉ keys(deme_intervals)
         error("Source and dest must be present in graph")
     end
     if "end_time" ∈ keys(migration_data)
         end_time = migration_data["end_time"]
-        if end_time < deme_intervals[source][1]
-            error("Migration end time less than source start time")
-        elseif end_time < deme_intervals[dest][1]
-            error("Migration end time greater than dest start time")
+        if end_time < deme_intervals[source][2]
+            error("Migration end time less than source end time")
+        elseif end_time < deme_intervals[dest][2]
+            error("Migration end time greater than dest end time")
         end
     else
         end_time = max(deme_intervals[source][2], deme_intervals[dest][2])
