@@ -7,8 +7,8 @@ function loadModel(fname::String)
 end
 
 @testset "ValidModels" begin
-    for f in readdir(joinpath(@__DIR__, "test-cases/valid"))
-        fname = joinpath(@__DIR__, "test-cases/valid", f)
+    for f in readdir(joinpath(@__DIR__, "../demes-spec/test-cases/valid"))
+        fname = joinpath(@__DIR__, "../demes-spec/test-cases/valid", f)
         if f in ["pulse_edge_case_02.yaml"]
             # these might not be valide test cases...
             @test_skip typeof(loadModel(fname)) == Dict{Any,Any}

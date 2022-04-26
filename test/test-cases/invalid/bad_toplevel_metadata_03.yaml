@@ -1,6 +1,0 @@
-time_units: generations
-metadata: "string"
-demes:
-  - name: a
-    epochs:
-    - start_size: 100
