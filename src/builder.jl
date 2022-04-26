@@ -17,13 +17,13 @@ function buildGraph(data::Dict)
         end
     end
     if "time_units" ∉ keys(data)
-        error("Input graph must provide time units")
+        throw(GraphError("input graph must provide time units"))
     else
         graph.time_units = data["time_units"]
     end
     if "generation_time" ∈ keys(data)
         if data["time_units"] == "generations" && data["generation_time"] != 1
-            error("Generation time must be 1 when time units are generations")
+            throw(GraphError("generation time must be 1 when time units are generations"))
         end
         graph.generation_time = data["generation_time"]
     end
@@ -31,8 +31,8 @@ function buildGraph(data::Dict)
         graph.defaults = data["defaults"]
     end
     # add demes, validating as we go
-    if "demes" ∉ keys(data)
-        error("Input graph must have at least one deme")
+    if "demes" ∉ keys(data) || length(data["demes"]) == 0
+        throw(GraphError("input graph must have at least one deme"))
     end
     for deme_data ∈ data["demes"]
         addDeme!(graph, deme_data, default_data)
@@ -80,7 +80,7 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
     else
         proportions = Number[]
     end
-    validateDemeAncestorsProportions(ancestors, proportions)
+    validateDemeAncestorsProportions(ancestors, proportions, deme_data["name"])
     deme.proportions = proportions
     # add start time
     if "start_time" ∈ keys(deme_data)
@@ -92,7 +92,7 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
         deme.start_time = start_time
     else
         if length(ancestors) > 1
-            error("Start time must be given if deme has multiple ancestors")
+            DemeError("Start time required with multiple ancestors")
         elseif length(ancestors) == 1
             deme.start_time = deme_intervals[deme_data["ancestors"][1]][2]
         else
@@ -106,7 +106,7 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
             addEpochDefaults!(epoch_data, default_data)
             addEpoch!(deme, epoch_data)
         elseif "epoch" ∉ keys(default_data)
-            error("At least one epoch must be provided")
+            throw(DemeError(deme.name, "at least one epoch must be provided"))
         else
             epoch_data = default_data["epoch"]
             addEpoch!(deme, epoch_data)
@@ -122,7 +122,7 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
     end
     # check start times align
     if deme.start_time != deme.epochs[1].start_time
-        error("Start time mismatch")
+        throw(DemeError(deme.name, "start times mismatch"))
     end
     push!(graph.demes, deme)
     return graph
@@ -136,7 +136,7 @@ function addEpoch!(deme::Deme, epoch_data::Dict)
             length(deme.epochs) >= 1 &&
             epoch_data["start_time"] != deme.epochs[end].end_time
         )
-            error("Epoch start time must match last epoch's end time")
+            throw(EpochError("epoch start time must match previous epoch end time"))
         end
         epoch.start_time = epoch_data["start_time"]
     elseif length(deme.epochs) >= 1
@@ -158,7 +158,7 @@ function addEpoch!(deme::Deme, epoch_data::Dict)
     elseif "end_size" ∈ keys(epoch_data)
         epoch.start_size = epoch_data["end_size"]
     else
-        error("Start or end size must be given for first epoch in a deme")
+        throw(EpochError("start or end size must be given for first epoch in a deme"))
     end
     # end size
     if "end_size" ∈ keys(epoch_data)
@@ -217,7 +217,7 @@ function getAsymmetricMigration(
     start_time = validateMigrationStartTime(migration_data, source, dest, deme_intervals)
     end_time = validateMigrationEndTime(migration_data, source, dest, deme_intervals)
     if start_time <= end_time
-        error("Migration start time must be larger than migration end time")
+        throw(MigrationError("migration start time must be larger than end time"))
     end
     mig = Migration(
         source = source,
@@ -241,13 +241,15 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
         if "migration" ∈ keys(default_data) && "rate" ∈ keys(default_data["migration"])
             migration_data["rate"] = default_data["migration"]["rate"]
         else
-            error("Migration rate must be provided")
+            throw(MigrationError("migration rate must be provided"))
         end
     end
     if "demes" ∈ keys(migration_data)
         # add for symmetric migrations, given demes in the migration dict
         if "source" ∈ keys(migration_data) || "dest" ∈ keys(migration_data)
-            error("Migration can have demes or source and dest but not both")
+            throw(
+                MigrationError("migration can have demes or source and dest but not both"),
+            )
         end
         if isa(migration_data["demes"], AbstractArray)
             for comb ∈ combinations(migration_data["demes"], 2)
@@ -259,7 +261,7 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
                 push!(graph.migrations, mig)
             end
         else
-            error("Migration demes must be an Array")
+            throw(MigrationError("migration demes must be an array"))
         end
     elseif "source" ∈ keys(migration_data)
         # add if source is given in migration dict
@@ -268,7 +270,7 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
         elseif "migration" ∈ keys(default_data) && "dest" ∈ keys(default_data["migration"])
             dest = default_data["migration"]["dest"]
         else
-            error("Migration must have dest")
+            throw(MigrationError("migration must have dest"))
         end
         mig = getAsymmetricMigration(
             migration_data,
@@ -282,7 +284,7 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
         if "migration" ∈ keys(default_data) && "source" ∈ keys(default_data["migration"])
             source = default_data["migration"]["source"]
         else
-            error("Migration must have source")
+            throw(MigrationError("migration must have source"))
         end
         mig = getAsymmetricMigration(
             migration_data,
@@ -307,7 +309,7 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
                     push!(graph.migrations, mig)
                 end
             else
-                error("Migration demes must be an Array")
+                throw(MigrationError("migration demes must be an array"))
             end
         elseif (
             "dest" ∈ keys(default_data["migration"]) &&
@@ -319,10 +321,10 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
             mig = getAsymmetricMigration(migration_data, source, dest, deme_intervals)
             push!(graph.migrations, mig)
         else
-            error("Either demes or source and dest must be given")
+            throw(MigrationError("either demes or source and dest must be given"))
         end
     else
-        error("Either demes or source and dest must be given")
+        throw(MigrationError("either demes or source and dest must be given"))
     end
 end
 

@@ -19,3 +19,35 @@ function pruneGraph(data, focal_demes)
     # that do not affect the ancestry of any possible sample from the focal demes.
     # TODO
 end
+
+# Custom errors
+mutable struct DemeError <: Exception
+    deme::String
+    msg::String
+end
+
+Base.showerror(io::IO, e::DemeError) = print(io, "in deme ", e.deme, " -- ", e.msg)
+
+mutable struct GraphError <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, e::GraphError) = print(io, e.msg)
+
+mutable struct PulseError <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, e::PulseError) = print(io, e.msg)
+
+mutable struct MigrationError <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, e::MigrationError) = print(io, e.msg)
+
+mutable struct EpochError <: Exception
+    msg::String
+end
+
+Base.showerror(io::IO, e::EpochError) = print(io, e.msg)
