@@ -1,7 +1,6 @@
 # load and run all valid models in demes-spec
 
 function loadModel(fname::String)
-    println(fname)
     graph = Demes.loadGraph(fname)
     simplified = Demes.asDictSimplified(graph)
     return simplified
