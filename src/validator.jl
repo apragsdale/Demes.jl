@@ -1,4 +1,5 @@
 function validateGraphTopLevel(data::Dict)
+    # Validations for top-level graph fields, aside from defaults
     for k in keys(data)
         if k ∉ [
             "description",
@@ -11,12 +12,15 @@ function validateGraphTopLevel(data::Dict)
             "defaults",
             "metadata",
         ]
+            # Check for disallowed fields
             throw(DemesError("unexpected field in graph data"))
         end
     end
+    # Validate description type
     if "description" in keys(data) && isa(data["description"], String) == false
         throw(DemesError("graph description must be a string"))
     end
+    # Validate doi type
     if "doi" in keys(data)
         if (typeof(data["doi"]) <: Vector) == false
             throw(DemesError("graph doi must be an array"))
@@ -27,6 +31,7 @@ function validateGraphTopLevel(data::Dict)
             end
         end
     end
+    # Validate time units
     if "time_units" ∉ keys(data)
         throw(DemesError("input graph must provide time units"))
     elseif data["time_units"] ∉ ["generations", "years"]
@@ -36,6 +41,7 @@ function validateGraphTopLevel(data::Dict)
             throw(DemesError("generation_time required when time units is not years"))
         end
     end
+    # Validate generation time
     if "generation_time" ∈ keys(data)
         if isa(data["generation_time"], Number) == false
             throw(DemesError("generation time must be a number"))
@@ -45,6 +51,7 @@ function validateGraphTopLevel(data::Dict)
             throw(DemesError("generation time must be 1 when time units are generations"))
         end
     end
+    # Validate metadata
     if "metadata" ∈ keys(data)
         if isa(data["metadata"], Dict) == false
             throw(DemesError("graph metadata must be a dict"))
@@ -53,15 +60,19 @@ function validateGraphTopLevel(data::Dict)
 end
 
 function validateGraphDefaults(data::Dict)
+    # Long set of validations for top-level defaults
     if "defaults" ∈ keys(data)
+        # Validate that the input default data is a Dict
         if isa(data["defaults"], Dict) == false
             throw(DemesError("graph defaults must be a dict"))
         end
+        # Check for unsupported fields
         for k in keys(data["defaults"])
             if k ∉ ["pulse", "migration", "deme", "epoch"]
                 throw(DemesError("unexpected field in graph defaults"))
             end
         end
+        # Validate top-level pulse data
         if "pulse" in keys(data["defaults"])
             if isa(data["defaults"]["pulse"], Dict) == false
                 throw(DemesError("pulse defaults must be a dict"))
@@ -128,6 +139,7 @@ function validateGraphDefaults(data::Dict)
                 end
             end
         end
+        # Validate top-level migration data
         if "migration" in keys(data["defaults"])
             if isa(data["defaults"]["migration"], Dict) == false
                 throw(DemesError("migration defaults must be a dict"))
@@ -186,6 +198,7 @@ function validateGraphDefaults(data::Dict)
                 end
             end
         end
+        # Validate top-level deme data
         if "deme" in keys(data["defaults"])
             if isa(data["defaults"]["deme"], Dict) == false
                 throw(DemesError("deme defaults must be a dict"))
@@ -200,6 +213,7 @@ function validateGraphDefaults(data::Dict)
                 throw(DemesError("default deme description must be a string"))
             end
         end
+        # Validate top-level epoch data
         if "epoch" in keys(data["defaults"])
             if isa(data["defaults"]["epoch"], Dict) == false
                 throw(DemesError("epoch defaults must be a dict"))
@@ -688,7 +702,7 @@ function validateResolvedDeme(deme::Deme)
     end
     # valid epochs
     start_time = deme.start_time
-    for e in deme.epochs
+    for e ∈ deme.epochs
         if e.start_time == Inf && e.size_function != "constant"
             throw(DemesError("epoch with Inf start time must have constant size function"))
         end
@@ -699,6 +713,104 @@ function validateResolvedDeme(deme::Deme)
 end
 
 function validateResolvedGraph(graph::Graph)
+    # Most of these checks are for valid continuous migrations
+    migration_epochs = Dict{Vector,Array}()
+    for mig ∈ graph.migrations
+        k = [mig.source, mig.dest]
+        t = [mig.start_time, mig.end_time]
+        if k ∈ keys(migration_epochs)
+            push!(migration_epochs[k], t)
+        else
+            migration_epochs[k] = [t]
+        end
+    end
     # check that migrations do not overlap
+    for kv ∈ migration_epochs
+        k = kv[1]
+        v = kv[2]
+        if length(v) > 1
+            # double check that start and end times are in the right order
+            for vv ∈ v
+                if vv[1] <= vv[2]
+                    throw(
+                        DemesError(
+                            "migration interval error for source " *
+                            k[1] *
+                            " and dest " *
+                            k[2],
+                        ),
+                    )
+                end
+            end
+            # check for overlaps between any pair of migration intervals
+            for i ∈ 1:length(v)-1
+                for j ∈ i+1:length(v)
+                    v1 = v[i]
+                    v2 = v[j]
+                    if (v1[1] < v2[1] && v1[1] > v2[2]) ||
+                       (v1[2] < v2[1] && v1[2] > v2[2]) ||
+                       (v2[1] < v1[1] && v2[1] > v1[2]) ||
+                       (v2[2] < v1[1] && v2[2] > v1[2]) ||
+                       (v1[1] == v2[1] && v1[2] == v2[2])
+                        throw(
+                            DemesError(
+                                "migration intervals overlap for source " *
+                                k[1] *
+                                " and dest " *
+                                k[2],
+                            ),
+                        )
+                    end
+                end
+            end
+        end
+    end
     # check migration sums into demes at all times is <= 1
+    for deme ∈ graph.demes
+        # get all start/end times into deme
+        all_times = Number[]
+        for kv ∈ migration_epochs
+            k = kv[1]
+            if k[2] == deme.name
+                for v ∈ kv[2]
+                    push!(all_times, v[1])
+                    push!(all_times, v[2])
+                end
+            end
+        end
+        # set up sub-intervals
+        if length(all_times) > 2
+            all_times = reverse(sort(collect(Set(all_times))))
+        end
+        sub_intervals = []
+        for i ∈ 1:length(all_times)-1
+            push!(sub_intervals, [all_times[i], all_times[i+1]])
+        end
+        # sum up incoming rates
+        incoming = Dict()
+        for sub_int in sub_intervals
+            incoming[sub_int] = 0
+        end
+        for mig in graph.migrations
+            if mig.dest == deme.name
+                for sub_int in sub_intervals
+                    if sub_int[1] <= mig.start_time && sub_int[2] >= mig.end_time
+                        incoming[sub_int] += mig.rate
+                    end
+                end
+            end
+        end
+        for kv in incoming
+            if kv[2] > 1
+                throw(
+                    DemesError(
+                        "deme " *
+                        deme.name *
+                        " has total migration exceeding 1 in time interval " *
+                        string(kv[1]),
+                    ),
+                )
+            end
+        end
+    end
 end
