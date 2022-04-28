@@ -44,3 +44,29 @@ end
     pulses::Array{Pulse} = []
     defaults::Dict{Any,Any} = Dict()
 end
+
+@kwdef mutable struct Split
+    parent::String
+    children::Array{String}
+    time::Number
+end
+
+@kwdef mutable struct Branch
+    parent::String
+    child::String
+    time::Number
+end
+
+@kwdef mutable struct Merger
+    parents::Array{String}
+    proportions::Array{Number}
+    child::String
+    time::Number
+end
+
+@kwdef mutable struct Admixture
+    parents::Array{String}
+    proportions::Array{Number}
+    child::String
+    time::Number
+end

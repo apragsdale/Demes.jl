@@ -48,6 +48,7 @@ function buildGraph(data::Dict)
             addPulse!(graph, pulse_data, default_data)
         end
     end
+    validateResolvedGraph(graph)
     return graph
 end
 
@@ -134,7 +135,6 @@ function addDeme!(graph::Graph, deme_data::Dict, default_data::Dict)
     end
     validateResolvedDeme(deme)
     push!(graph.demes, deme)
-    return graph
 end
 
 function addEpoch!(deme::Deme, epoch_data::Dict)
@@ -258,6 +258,16 @@ function addMigrationDefaults!(migration_data::Dict, default_data::Dict)
             end
             if "dest" ∉ keys(migration_data) && "dest" ∈ keys(default_data["migration"])
                 migration_data["dest"] = default_data["migration"]["dest"]
+            end
+        end
+        if "end_time" ∉ keys(migration_data)
+            if "end_time" ∈ keys(default_data["migration"])
+                migration_data["end_time"] = default_data["migration"]["end_time"]
+            end
+        end
+        if "start_time" ∉ keys(migration_data)
+            if "start_time" ∈ keys(default_data["migration"])
+                migration_data["start_time"] = default_data["migration"]["start_time"]
             end
         end
     end

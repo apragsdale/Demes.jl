@@ -19,10 +19,6 @@ end
         ]
             # TODO: finalize pulse time edge cases
             @test_skip loadModel(fname)
-        elseif occursin("bad_migration_rates_sum", f) ||
-               occursin("overlapping_migrations", f)
-            # TODO: test for overlapping migration issues
-            @test_skip loadModel(fname)
         else
             @test_throws Demes.DemesError loadModel(fname)
         end
