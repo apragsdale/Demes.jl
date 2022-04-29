@@ -268,7 +268,7 @@ end
 
 function validateGraphPulses(data::Dict)
     if isa(data["pulses"], Vector) == false
-        throw(DemesError("migrations must be an array"))
+        throw(DemesError("pulses must be an array"))
     end
     for pulse_data in data["pulses"]
         if isa(pulse_data, Dict) == false
@@ -286,24 +286,15 @@ function validateDemeNameDescription(deme_data::Dict, deme_intervals::Dict)
     elseif length(deme_data["name"]) == 0
         throw(DemesError("deme name must not be an empty string"))
     else
-        # TODO: check for valid deme names
-        #name = deme_data["name"]
-        #if (isuppercase(name[1]) || islowercase(name[1]) || name[1] == "_") == false
-        #    throw(DemesError("invalid deme name"))
-        #end
-        #for char in name
-        #    if (
-        #        isuppercase(char) ||
-        #        islowercase(char) ||
-        #        isdigit(char) ||
-        #        isequal(char, "_")
-        #    ) == false
-        #        throw(DemesError("invalid deme name"))
-        #    end
-        #end
+        name = deme_data["name"]
+        python_identifier = r"^[^\d\W]\w*\Z"
+        x = match(python_identifier, name)
+        if x == nothing || x.match != name
+            throw(DemesError("deme name " * name * " is invalid"))
+        end
     end
     if deme_data["name"] ∈ keys(deme_intervals)
-        throw(DemesError("deme name must be unique"))
+        throw(DemesError("deme name " * name * " must be unique"))
     end
     if "description" ∈ keys(deme_data)
         if isa(deme_data["description"], String) == false
