@@ -9,10 +9,7 @@ end
 @testset "InvalidModels" begin
     for f in readdir(joinpath(@__DIR__, "../demes-spec/test-cases/invalid"))
         fname = joinpath(@__DIR__, "../demes-spec/test-cases/invalid", f)
-        if occursin("bad_deme_name", f)
-            # TODO: figure out how to test for valid deme names
-            @test_skip loadModel(fname)
-        elseif f in [
+        if f in [
             "bad_pulse_time_02.yaml",
             "bad_pulse_time_04.yaml",
             "bad_pulse_time_09.yaml",
