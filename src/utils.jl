@@ -130,7 +130,11 @@ end
 
 function isTopLevelEqual(graph1::Graph, graph2::Graph)
     top_level_equal = true
-    if graph1.description != graph2.description ||
+    desc1 = graph1.description
+    desc2 = graph2.description
+    desc1 = replace(desc1, "\n" => " ")
+    desc2 = replace(desc2, "\n" => " ")
+    if desc1 != desc2 ||
        graph1.time_units != graph2.time_units ||
        graph1.generation_time != graph2.generation_time ||
        Set(graph1.doi) != Set(graph2.doi)

@@ -17,7 +17,7 @@ end
 @testset "Resolved" begin
     for f in readdir(joinpath(@__DIR__, "../demes-spec/examples"))
         if occursin("yaml", f)
-            if occursin("offshoots", f)
+            if occursin("offshootsxxxxx", f)
                 # descriptions mismatch due to \n characters
                 @test_skip compareToResolved(path_name) == true
             else
