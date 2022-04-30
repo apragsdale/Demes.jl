@@ -43,6 +43,7 @@ end
     migrations::Array{Migration} = []
     pulses::Array{Pulse} = []
     defaults::Dict{Any,Any} = Dict()
+    metadata::Dict{Any,Any} = Dict()
 end
 
 @kwdef mutable struct Split

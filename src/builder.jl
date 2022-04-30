@@ -48,6 +48,10 @@ function buildGraph(data::Dict)
             addPulse!(graph, pulse_data, default_data)
         end
     end
+    # add metadata
+    if "metadata" ∈ keys(data)
+        graph.metadata = data["metadata"]
+    end
     validateResolvedGraph(graph)
     return graph
 end
