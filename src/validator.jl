@@ -337,9 +337,19 @@ function validateDemeAncestors(deme_data::Dict, deme_intervals::Dict)
     if (typeof(deme_data["ancestors"]) <: Vector) == false
         throw(DemesError("deme ancestors must be an array"))
     end
-    if length(deme_data["ancestors"]) > 0 &&
-       typeof(deme_data["ancestors"]) != Vector{String}
-        throw(DemesError("deme ancestors must be an array of deme name strings"))
+    if length(deme_data["ancestors"]) > 0
+        for anc in deme_data["ancestors"]
+            if typeof(anc) != String
+                throw(
+                    DemesError(
+                        "deme " *
+                        deme_data["name"] *
+                        " ancestors must be string, got " *
+                        string(typeof(anc)),
+                    ),
+                )
+            end
+        end
     end
     if length(Set(deme_data["ancestors"])) != length(deme_data["ancestors"])
         throw(DemesError("cannot repeat deme ancestors"))
