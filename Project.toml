@@ -1,7 +1,7 @@
 name = "Demes"
 uuid = "d1067089-e8d3-40d0-a348-a9765823bb51"
 authors = ["Aaron Ragsdale <apragsdale@wisc.edu>"]
-version = "0.0.1"
+version = "0.1.0"
 
 [deps]
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
