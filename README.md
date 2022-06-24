@@ -11,14 +11,5 @@ using Demes
 graph = Demes.loadGraph("test/gutenkunst_ooa.yaml")
 ```
 
-## Development and installation
-
-Testing takes advantage of valid and invalid Demes models provided in
-[demes-spec](https://github.com/popsim-consortium/demes-spec.git).
-
-After cloning, you will need to
-
-```sh
-git submodule init
-git submodule update
-```
+This imports a demes-specified demographic model, which is used in
+downstream population genetics simulation software.
