@@ -15,16 +15,11 @@ function compareToResolved(model_name::String)
 end
 
 @testset "Resolved" begin
-    for f in readdir(joinpath(@__DIR__, "../demes-spec/examples"))
+    for f in readdir(joinpath(@__DIR__, "examples"))
         if occursin("yaml", f)
-            if occursin("offshootsxxxxx", f)
-                # descriptions mismatch due to \n characters
-                @test_skip compareToResolved(path_name) == true
-            else
-                model_name = split(f, ".yaml")[1]
-                path_name = joinpath(@__DIR__, "../demes-spec/examples", model_name)
-                @test compareToResolved(path_name) == true
-            end
+            model_name = split(f, ".yaml")[1]
+            path_name = joinpath(@__DIR__, "examples", model_name)
+            @test compareToResolved(path_name) == true
         end
     end
 end

@@ -7,8 +7,8 @@ function loadModel(fname::String)
 end
 
 @testset "InvalidModels" begin
-    for f in readdir(joinpath(@__DIR__, "../demes-spec/test-cases/invalid"))
-        fname = joinpath(@__DIR__, "../demes-spec/test-cases/invalid", f)
+    for f in readdir(joinpath(@__DIR__, "test-cases/invalid"))
+        fname = joinpath(@__DIR__, "test-cases/invalid", f)
         if f in
            ["bad_pulse_time_02.yaml", "bad_pulse_time_04.yaml", "bad_pulse_time_09.yaml"]
             # TODO: finalize pulse time edge cases
