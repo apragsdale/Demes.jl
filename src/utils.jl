@@ -218,6 +218,44 @@ function in_genetic_units(graph::Graph)
     return buildGraph(data)
 end
 
+"""
+    sizeat(graph, deme, t)
+
+Get the size of a deme at time t.
+"""
+function sizeat(graph, deme, t)
+    deme_found = false
+    for d in graph.demes
+        if d.name == deme
+            deme_found = true
+            if t > d.epochs[1].start_time || t < d.epochs[end].end_time
+                throw(
+                    DemesError(
+                        "time " * string(t) * " is outside the existence time of " * deme,
+                    ),
+                )
+            end
+            for e in d.epochs
+                if t >= e.end_time
+                    if e.size_function == "constant"
+                        return e.start_size
+                    elseif e.size_function == "exponential"
+                        return e.start_size * exp(
+                            log(e.end_size / e.start_size) * (e.start_time - t) /
+                            (e.start_time - e.end_time),
+                        )
+                    else
+                        throw(DemesError("unimplemented: size function " * e.size_function))
+                    end
+                end
+            end
+        end
+    end
+    if deme_found == false
+        throw(DemesError("deme " * deme * " was not found in graph"))
+    end
+end
+
 # Custom errors
 mutable struct DemesError <: Exception
     msg::String
