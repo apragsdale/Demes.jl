@@ -59,7 +59,7 @@ function validateGraphTopLevel(data::Dict)
     end
 end
 
-function validateGraphDefaults(data::Dict)
+function validateGraphDefaults(data::Dict; check_migrate_bounded::Bool = true)
     # Long set of validations for top-level defaults
     if "defaults" ∈ keys(data)
         # Validate that the input default data is a Dict
@@ -170,9 +170,11 @@ function validateGraphDefaults(data::Dict)
             if "rate" in keys(data["defaults"]["migration"])
                 if isa(data["defaults"]["migration"]["rate"], Number) == false
                     throw(DemesError("default migration rate must be a number"))
-                elseif data["defaults"]["migration"]["rate"] < 0 ||
+                elseif check_migrate_bounded
+                    if data["defaults"]["migration"]["rate"] < 0 ||
                        data["defaults"]["migration"]["rate"] > 1
-                    throw(DemesError("default migration rate must be between 0 and 1"))
+                        throw(DemesError("default migration rate must be between 0 and 1"))
+                    end
                 end
             end
             if "source" in keys(data["defaults"]["migration"])
@@ -383,7 +385,7 @@ function validateDemeProportions(deme_data::Dict)
     end
 end
 
-function validateMigrationData(migration_data::Dict)
+function validateMigrationData(migration_data::Dict; check_rate_bounded::Bool = true)
     for k in keys(migration_data)
         if k ∉ ["rate", "source", "dest", "demes", "start_time", "end_time"]
             throw(DemesError("migration data has invalid field"))
@@ -393,8 +395,10 @@ function validateMigrationData(migration_data::Dict)
         throw(DemesError("migration rate must be provided"))
     elseif isa(migration_data["rate"], Number) == false
         throw(DemesError("migration rate must be a number"))
-    elseif migration_data["rate"] < 0 || migration_data["rate"] > 1
-        throw(DemesError("migration rate must be between 0 and 1"))
+    elseif check_rate_bounded
+        if migration_data["rate"] < 0 || migration_data["rate"] > 1
+            throw(DemesError("migration rate must be between 0 and 1"))
+        end
     end
     if "demes" ∈ keys(migration_data)
         # add for symmetric migrations, given demes in the migration dict
@@ -767,50 +771,52 @@ function validateResolvedGraph(graph::Graph)
         end
     end
     # check migration sums into demes at all times is <= 1
-    for deme ∈ graph.demes
-        # get all start/end times into deme
-        all_times = Number[]
-        for kv ∈ migration_epochs
-            k = kv[1]
-            if k[2] == deme.name
-                for v ∈ kv[2]
-                    push!(all_times, v[1])
-                    push!(all_times, v[2])
-                end
-            end
-        end
-        # set up sub-intervals
-        if length(all_times) > 2
-            all_times = reverse(sort(collect(Set(all_times))))
-        end
-        sub_intervals = []
-        for i ∈ 1:length(all_times)-1
-            push!(sub_intervals, [all_times[i], all_times[i+1]])
-        end
-        # sum up incoming rates
-        incoming = Dict()
-        for sub_int in sub_intervals
-            incoming[sub_int] = 0
-        end
-        for mig in graph.migrations
-            if mig.dest == deme.name
-                for sub_int in sub_intervals
-                    if sub_int[1] <= mig.start_time && sub_int[2] >= mig.end_time
-                        incoming[sub_int] += mig.rate
+    if graph.time_units != "genetic"
+        for deme ∈ graph.demes
+            # get all start/end times into deme
+            all_times = Number[]
+            for kv ∈ migration_epochs
+                k = kv[1]
+                if k[2] == deme.name
+                    for v ∈ kv[2]
+                        push!(all_times, v[1])
+                        push!(all_times, v[2])
                     end
                 end
             end
-        end
-        for kv in incoming
-            if kv[2] > 1
-                throw(
-                    DemesError(
-                        "deme " *
-                        deme.name *
-                        " has total migration exceeding 1 in time interval " *
-                        string(kv[1]),
-                    ),
-                )
+            # set up sub-intervals
+            if length(all_times) > 2
+                all_times = reverse(sort(collect(Set(all_times))))
+            end
+            sub_intervals = []
+            for i ∈ 1:length(all_times)-1
+                push!(sub_intervals, [all_times[i], all_times[i+1]])
+            end
+            # sum up incoming rates
+            incoming = Dict()
+            for sub_int in sub_intervals
+                incoming[sub_int] = 0
+            end
+            for mig in graph.migrations
+                if mig.dest == deme.name
+                    for sub_int in sub_intervals
+                        if sub_int[1] <= mig.start_time && sub_int[2] >= mig.end_time
+                            incoming[sub_int] += mig.rate
+                        end
+                    end
+                end
+            end
+            for kv in incoming
+                if kv[2] > 1
+                    throw(
+                        DemesError(
+                            "deme " *
+                            deme.name *
+                            " has total migration exceeding 1 in time interval " *
+                            string(kv[1]),
+                        ),
+                    )
+                end
             end
         end
     end

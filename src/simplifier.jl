@@ -12,6 +12,7 @@ function asDict(graph::Graph)
     if graph.time_units != "generations"
         data["generation_time"] = graph.generation_time
     end
+    data["metadata"] = graph.metadata
     data["demes"] = Dict[]
     for deme ∈ graph.demes
         deme_dict = Dict("name" => deme.name, "start_time" => deme.start_time)
@@ -107,6 +108,9 @@ function asDictSimplified(graph::Graph)
     deme_intervals = getDemeIntervals(graph)
     simplified = Dict{Any,Any}()
     simplified = Dict()
+    if length(graph.metadata) > 0
+        simplified["metadata"] = graph.metadata
+    end
     # simplify description
     if length(graph.description) > 0
         simplified["description"] = graph.description

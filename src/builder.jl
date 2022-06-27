@@ -281,7 +281,11 @@ function addMigration!(graph::Graph, migration_data::Dict, default_data::Dict)
     # migrations are decomposed into asymmetric migrations
     deme_intervals = getDemeIntervals(graph)
     addMigrationDefaults!(migration_data, default_data)
-    validateMigrationData(migration_data)
+    if graph.time_units == "genetic"
+        validateMigrationData(migration_data, check_rate_bounded=false)
+    else
+        validateMigrationData(migration_data)
+    end
     if "demes" ∈ keys(migration_data)
         # add for symmetric migrations, given demes in the migration dict
         for comb ∈ combinations(migration_data["demes"], 2)

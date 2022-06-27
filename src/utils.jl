@@ -163,7 +163,60 @@ gene flow so that an ancestral Ne can be determined.
 
 TODO: The ancestral Ne is determined by...
 """
-function in_genetic_units(graph::Graph) end
+function in_genetic_units(graph::Graph)
+    if graph.time_units == "genetic"
+        return graph
+    elseif graph.time_units == "years"
+        graph = in_generations(graph)
+    end
+    # determine ancestral Ne
+    root_demes = String[]
+    root_sizes = Number[]
+    for deme in graph.demes
+        if deme.start_time == Inf
+            push!(root_demes, deme.name)
+            push!(root_sizes, deme.epochs[1].start_size)
+        end
+    end
+    if length(root_demes) > 1
+        error("unimplemented: ancestral Ne to be determined by multiple connected demes")
+    else
+        Ne = root_sizes[1]
+    end
+    # rescale parameters in the graph
+    data = Demes.asDict(graph)
+    data["metadata"]["Ne"] = Ne
+    data["time_units"] = "genetic"
+    # adjust deme times and sizes
+    for (index, deme) in enumerate(data["demes"])
+        if "start_time" in keys(deme)
+            data["demes"][index]["start_time"] = deme["start_time"] / 2 / Ne
+        end
+        for (epoch_index, epoch) in enumerate(deme["epochs"])
+            for k in ["start_time", "end_time"]
+                data["demes"][index]["epochs"][epoch_index][k] = epoch[k] / 2 / Ne
+            end
+            for k in ["start_size", "end_size"]
+                data["demes"][index]["epochs"][epoch_index][k] = epoch[k] / Ne
+            end
+        end
+    end
+    # adjust migration times and rates
+    if "migrations" in keys(data)
+        for (index, migration) in enumerate(data["migrations"])
+            data["migrations"][index]["start_time"] = migration["start_time"] / 2 / Ne
+            data["migrations"][index]["end_time"] = migration["end_time"] / 2 / Ne
+            data["migrations"][index]["rate"] = migration["rate"] * 2 * Ne
+        end
+    end
+    # adjust pulse times
+    if "pulses" in keys(data)
+        for (index, pulse) in enumerate(data["pulses"])
+            data["pulses"][index]["time"] = pulse["time"] / 2 / Ne
+        end
+    end
+    return buildGraph(data)
+end
 
 # Custom errors
 mutable struct DemesError <: Exception
