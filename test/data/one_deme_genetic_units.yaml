@@ -1,0 +1,11 @@
+description: A single deme, single epoch model, with relative size 1.
+time_units: genetic
+metadata:
+  Ne: 10000
+  generation_time: 29
+demes:
+- name: root
+  start_time: Infinity
+  epochs:
+  - start_size: 1
+    end_time: 0

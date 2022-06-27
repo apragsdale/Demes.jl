@@ -79,17 +79,91 @@ function getDiscreteDemographicEvents(graph::Graph)
     return demographic_events
 end
 
-function sliceGraph(data, time)
+function slice_graph(data, time)
     # Takes an input demographic model and returns two demographic models, one
     # above and one below the slice time
     # TODO
 end
 
-function pruneGraph(data, focal_demes)
+function prune_graph(data, focal_demes)
     # Takes an input demographic model and set of demes, and removes other demes
     # that do not affect the ancestry of any possible sample from the focal demes.
     # TODO
 end
+
+"""
+    in_generations(graph)
+
+Convert a graph with given time units to generations. The input graph's generation
+time is retained in metadata.
+
+If graph is already given in generations, returns an unchanged graph. If graph has
+genetic time units, we require the ancestral effective population size, `Ne`, to be
+provided in the graph's metadata.
+"""
+function in_generations(graph::Graph)
+    if graph.time_units == "generations"
+        if "generation_time" ∉ keys(graph.metadata)
+            graph.metadata["generation_time"] = graph.generation_time
+        end
+        return graph
+    elseif graph.time_units == "years"
+        data = Demes.asDict(graph)
+        data["time_units"] = "generations"
+        # get the generation time, which adjusts all times in the graph
+        generation_time = pop!(data, "generation_time")
+        if "metadata" in keys(data)
+            data["metadata"]["generation_time"] = generation_time
+        else
+            data["metadata"] = Dict("generation_time" => generation_time)
+        end
+        # adjust deme times
+        for (index, deme) in enumerate(data["demes"])
+            if "start_time" in keys(deme)
+                data["demes"][index]["start_time"] = deme["start_time"] / generation_time
+            end
+            for (epoch_index, epoch) in enumerate(deme["epochs"])
+                data["demes"][index]["epochs"][epoch_index]["start_time"] =
+                    epoch["start_time"] / generation_time
+                data["demes"][index]["epochs"][epoch_index]["end_time"] =
+                    epoch["end_time"] / generation_time
+            end
+        end
+        # adjust migration times
+        if "migrations" in keys(data)
+            for (index, migration) in enumerate(data["migrations"])
+                data["migrations"][index]["start_time"] =
+                    migration["start_time"] / generation_time
+                data["migrations"][index]["end_time"] =
+                    migration["end_time"] / generation_time
+            end
+        end
+        # adjust pulse times
+        if "pulses" in keys(data)
+            for (index, pulse) in enumerate(data["pulses"])
+                data["pulses"][index]["time"] = pulse["time"] / generation_time
+            end
+        end
+        return buildGraph(data)
+    elseif graph.time_units == "genetic"
+        error("unimplemented: conversion from genetic to generation time units")
+    end
+end
+
+"""
+    in_genetic_units(graph)
+
+Convert a graph with given time units to genetic units. The input graph's generation
+time and/or effective population size are retained in metadata.
+
+If graph is already given in genetic units, returns an unchanged graph. The effective
+population size is given by the size in the first epoch of the ancestral deme. If
+there are multiple demes with start times of Infinity, they must be connected by
+gene flow so that an ancestral Ne can be determined.
+
+TODO: The ancestral Ne is determined by...
+"""
+function in_genetic_units(graph::Graph) end
 
 # Custom errors
 mutable struct DemesError <: Exception

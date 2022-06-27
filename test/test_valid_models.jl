@@ -16,5 +16,5 @@ end
             @test typeof(loadModel(fname)) == Dict{Any,Any}
         end
     end
-    @test typeof(loadModel("gutenkunst_ooa.yaml")) == Dict{Any,Any}
+    @test typeof(loadModel(joinpath(@__DIR__, "data/gutenkunst_ooa.yaml"))) == Dict{Any,Any}
 end

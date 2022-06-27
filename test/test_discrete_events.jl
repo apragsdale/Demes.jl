@@ -1,7 +1,7 @@
 @testset "DiscreteEvents" begin
     # test splits
     @test length(
-        Demes.getDiscreteDemographicEvents(Demes.loadGraph("gutenkunst_ooa.yaml"))["splits"],
+        Demes.getDiscreteDemographicEvents(Demes.loadGraph("data/gutenkunst_ooa.yaml"))["splits"],
     ) == 3
     # TODO: set up isequal functions for Demes structs
     #@test Demes.getDiscreteDemographicEvents(

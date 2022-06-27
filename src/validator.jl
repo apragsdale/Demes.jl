@@ -34,11 +34,11 @@ function validateGraphTopLevel(data::Dict)
     # Validate time units
     if "time_units" ∉ keys(data)
         throw(DemesError("input graph must provide time units"))
-    elseif data["time_units"] ∉ ["generations", "years"]
-        throw(DemesError("graph time units must be generations or years"))
+    elseif data["time_units"] ∉ ["generations", "years", "genetic"]
+        throw(DemesError("graph time units must be generations, years or genetic"))
     else
-        if data["time_units"] != "generations" && "generation_time" ∉ keys(data)
-            throw(DemesError("generation_time required when time units is not years"))
+        if data["time_units"] == "years" && "generation_time" ∉ keys(data)
+            throw(DemesError("generation_time required when time units is in years"))
         end
     end
     # Validate generation time

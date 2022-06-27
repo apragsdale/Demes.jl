@@ -8,6 +8,6 @@ Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [compat]
-julia = "1"
-YAML = "0.4"
 Combinatorics = "1"
+YAML = "0.4"
+julia = "1"
